@@ -1,0 +1,74 @@
+﻿@model SinetLeaveManagement.Models.ApplicationUser
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Register New User</h2>
+                    <form asp-action="Register" method="post" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label">First Name</label>
+                            <input name="firstName" type="text" class="form-control" required />
+                            <div class="invalid-feedback">Please enter the first name.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input name="lastName" type="text" class="form-control" required />
+                            <div class="invalid-feedback">Please enter the last name.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input name="email" type="email" class="form-control" required />
+                            <div class="invalid-feedback">Please enter a valid email.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input name="password" type="password" class="form-control" required />
+                            <div class="invalid-feedback">Please enter a password.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select name="role" class="form-select" required>
+                                <option value="">Select Role</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Employee">Employee</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a role.</div>
+                        </div>
+                        @if (ViewData.ModelState.Any(x => x.Key == ""))
+                        {
+                            <div class="alert alert-danger">
+                                @foreach (var error in ViewData.ModelState[""].Errors)
+                                {
+                                    <p>@error.ErrorMessage</p>
+                                }
+                            </div>
+                        }
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                            <a asp-action="Index" asp-controller="LeaveRequests" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Bootstrap form validation
+    (function () {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>

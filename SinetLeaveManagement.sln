@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36203.30 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SinetLeaveManagement", "SinetLeaveManagement\SinetLeaveManagement.csproj", "{605D54A3-D544-49CF-A592-E805A82DFBCB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{605D54A3-D544-49CF-A592-E805A82DFBCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{605D54A3-D544-49CF-A592-E805A82DFBCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{605D54A3-D544-49CF-A592-E805A82DFBCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{605D54A3-D544-49CF-A592-E805A82DFBCB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E86F75C7-3464-444B-8DE3-A4855D257801}
+	EndGlobalSection
+EndGlobal

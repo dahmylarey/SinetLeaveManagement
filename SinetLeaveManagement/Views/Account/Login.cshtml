@@ -1,0 +1,51 @@
+﻿<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Login</h2>
+                    <form asp-action="Login" method="post" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input name="email" type="email" class="form-control" required />
+                            <div class="invalid-feedback">Please enter a valid email.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input name="password" type="password" class="form-control" required />
+                            <div class="invalid-feedback">Please enter your password.</div>
+                        </div>
+                        @if (ViewData.ModelState.Any(x => x.Key == ""))
+                        {
+                            <div class="alert alert-danger">
+                                @foreach (var error in ViewData.ModelState[""].Errors)
+                                {
+                                    <p>@error.ErrorMessage</p>
+                                }
+                            </div>
+                        }
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Bootstrap form validation
+    (function () {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
