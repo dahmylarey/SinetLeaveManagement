@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SinetLeaveManagement.Data;
 using SinetLeaveManagement.Hubs;
 using SinetLeaveManagement.Models;
+using SinetLeaveManagement.Services;
 using SINETLeaveManagement.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 builder.Services.AddRazorPages();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddLogging(configure => configure.AddConsole().AddDebug());
+
+
 
 var app = builder.Build();
 
