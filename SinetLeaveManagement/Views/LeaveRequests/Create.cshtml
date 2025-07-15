@@ -2,7 +2,7 @@
 <div class="container mt-4">
     <h2 class="mb-4">Request Leave</h2>
     <form asp-action="Create" method="post" class="needs-validation" novalidate>
-        @Html.AntiForgeryToken() <!-- Add anti-forgery token -->
+        @Html.AntiForgeryToken()
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label asp-for="StartDate" class="form-label">Start Date</label>
@@ -34,24 +34,3 @@
         <a asp-action="Index" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
-<script>
-    // Bootstrap form validation
-    (function () {
-        'use strict';
-        var forms = document.querySelectorAll('.needs-validation');
-        Array.prototype.slice.call(forms).forEach(function (form) {
-            form.addEventListener('submit', function (event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            }, false);
-        });
-    })();
-</script>
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
