@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.SignalR;
-
+using Microsoft.EntityFrameworkCore;
 using SinetLeaveManagement.Data;
 using SinetLeaveManagement.Hubs;
 using SinetLeaveManagement.Models;
@@ -30,10 +31,102 @@ namespace SinetLeaveManagement.Controllers
         public IActionResult Index()
         {
             var requests = _context.LeaveRequests
-                .Where(r => User.IsInRole("Admin") || User.IsInRole("Manager") || r.EmployeeId == User.Identity.Name)
-                .ToList();
+            .Include(r => r.Employee) // Eager load the Employee navigation property
+            .Where(r => User.IsInRole("ADMIN") || User.IsInRole("MANAGER") || r.EmployeeId == User.Identity.Name)
+            .ToList();
             return View(requests);
         }
+
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var leaveRequest = await _context.LeaveRequests
+                .Include(l => l.Employee)
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (leaveRequest == null)
+            {
+                return NotFound();
+            }
+
+            return View(leaveRequest);
+        }
+
+        // GET: Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+            if (leaveRequest == null)
+            {
+                return NotFound();
+            }
+            ViewData["EmployeeId"] = new SelectList(_context.Users, "Id", "Id", leaveRequest.EmployeeId);
+            return View(leaveRequest);
+        }
+
+        // POST: LeaveRequests/Edit/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,StartDate,EndDate,LeaveType,Comments,EmployeeId,Status,ApproverId,CreatedAt")] LeaveRequest leaveRequest)
+        {
+            if (id != leaveRequest.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(leaveRequest);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    //if (!LeaveRequestExists(leaveRequest.Id))
+                    //{
+                    //    return NotFound();
+                    //}
+                    //else
+                    //{
+                    //    throw;
+                    //}
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            ViewData["EmployeeId"] = new SelectList(_context.Users, "Id", "Id", leaveRequest.EmployeeId);
+            return View(leaveRequest);
+        }
+
+        // GET: LeaveRequests/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var leaveRequest = await _context.LeaveRequests
+                .Include(l => l.Employee)
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (leaveRequest == null)
+            {
+                return NotFound();
+            }
+
+            return View(leaveRequest);
+        }
+
 
         [Authorize(Roles = "EMPLOYEE, MANAGER, ADMIN")]
         public IActionResult Create()
@@ -88,14 +181,17 @@ namespace SinetLeaveManagement.Controllers
             }
         }
 
-        [Authorize(Roles = "MANAGER, SUPERVISOR")]
+        [Authorize(Roles = "MANAGER, SUPERVISOR, ADMIN")]
         public async Task<IActionResult> Approve(int id)
         {
-            var request = await _context.LeaveRequests.FindAsync(id);
+            var request = await _context.LeaveRequests
+                .Include(r => r.Employee)
+                .FirstOrDefaultAsync(r => r.Id == id);
             if (request != null)
             {
+                var currentUser = await _userManager.GetUserAsync(User); // Get the current user
                 request.Status = "Approved";
-                request.ApproverId = User.Identity.Name;
+                request.ApproverId = currentUser?.Id; // Use the user's Id instead of Name
                 await _context.SaveChangesAsync();
 
                 var notification = new Notification
@@ -110,9 +206,9 @@ namespace SinetLeaveManagement.Controllers
 
                 await _notificationHub.Clients.User(request.EmployeeId).SendAsync("ReceiveNotification", notification.Message);
 
-                var adminEmail = "oladeleoluwadamilare@gmail.com"; // Replace with actual admin email
+                var adminEmail = "admin@example.com";
                 var subject = "Leave Request Approved";
-                var body = $"Leave request from {request.Employee.FirstName} {request.Employee.LastName} (ID: {request.Id}) has been approved on {DateTime.Now:yyyy-MM-dd HH:mm:ss}.";
+                var body = $"Leave request from {request.Employee?.FirstName} {request.Employee?.LastName} (ID: {request.Id}) has been approved on {DateTime.Now:yyyy-MM-dd HH:mm:ss}.";
                 await _emailService.SendEmailAsync(adminEmail, subject, body);
 
                 return RedirectToAction("Index");
@@ -120,10 +216,12 @@ namespace SinetLeaveManagement.Controllers
             return NotFound();
         }
 
-        [Authorize(Roles = "MANAGER, SUPERVISOR")]
+        [Authorize(Roles = "MANAGER, SUPERVISOR, ADMIN")]
         public async Task<IActionResult> Reject(int id)
         {
-            var request = await _context.LeaveRequests.FindAsync(id);
+            var request = await _context.LeaveRequests
+                .Include(r => r.Employee)
+                .FirstOrDefaultAsync(r => r.Id == id);
             if (request == null)
             {
                 return NotFound();
@@ -132,14 +230,17 @@ namespace SinetLeaveManagement.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "MANAGER, SUPERVISOR")]
+        [Authorize(Roles = "MANAGER, SUPERVISOR, ADMIN")]
         public async Task<IActionResult> Reject(LeaveRequest model)
         {
-            var request = await _context.LeaveRequests.FindAsync(model.Id);
+            var request = await _context.LeaveRequests
+                .Include(r => r.Employee)
+                .FirstOrDefaultAsync(r => r.Id == model.Id);
             if (request != null)
             {
+                var currentUser = await _userManager.GetUserAsync(User); // Get the current user
                 request.Status = "Rejected";
-                request.ApproverId = User.Identity.Name;
+                request.ApproverId = currentUser?.Id; // Use the user's Id instead of Name
                 request.Comments = model.Comments;
                 await _context.SaveChangesAsync();
 
@@ -155,9 +256,9 @@ namespace SinetLeaveManagement.Controllers
 
                 await _notificationHub.Clients.User(request.EmployeeId).SendAsync("ReceiveNotification", notification.Message);
 
-                var adminEmail = "oladeleoluwadamilare@gmail.com"; // Replace with actual admin email
+                var adminEmail = "admin@example.com";
                 var subject = "Leave Request Rejected";
-                var body = $"Leave request from {request.Employee.FirstName} {request.Employee.LastName} (ID: {request.Id}) has been rejected on {DateTime.Now:yyyy-MM-dd HH:mm:ss}. Reason: {model.Comments}";
+                var body = $"Leave request from {request.Employee?.FirstName} {request.Employee?.LastName} (ID: {request.Id}) has been rejected on {DateTime.Now:yyyy-MM-dd HH:mm:ss}. Reason: {model.Comments}";
                 await _emailService.SendEmailAsync(adminEmail, subject, body);
 
                 return RedirectToAction("Index");

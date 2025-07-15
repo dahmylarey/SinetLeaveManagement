@@ -369,7 +369,7 @@ namespace SinetLeaveManagement.Migrations
                     b.HasOne("SinetLeaveManagement.Models.ApplicationUser", "Employee")
                         .WithMany()
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Approver");

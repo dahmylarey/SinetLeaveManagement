@@ -12,8 +12,8 @@ using SinetLeaveManagement.Data;
 namespace SinetLeaveManagement.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250715000009_addroleinAppUser")]
-    partial class addroleinAppUser
+    [Migration("20250715123547_initils")]
+    partial class initils
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -372,7 +372,7 @@ namespace SinetLeaveManagement.Migrations
                     b.HasOne("SinetLeaveManagement.Models.ApplicationUser", "Employee")
                         .WithMany()
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Approver");
