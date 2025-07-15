@@ -1,16 +1,20 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using SinetLeaveManagement.Models;
+using static System.Formats.Asn1.AsnWriter;
 
 
 namespace SINETLeaveManagement.Services
 {
     public static class RoleInitializer
     {
-        private static readonly string[] Roles = { "Admin", "Manager", "Supervisor" };
+        private static readonly string[] Roles = { "ADMIN", "MANAGER", "EMPLOYEE" };
 
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
+            
+
+
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
@@ -31,23 +35,33 @@ namespace SINETLeaveManagement.Services
                 adminUser = new ApplicationUser
                 {
                     UserName = adminEmail,
-                    Email = adminEmail,
                     FirstName = "System",
                     LastName = "Admin",
-                    EmailConfirmed = true,
                     JoinDate = DateTime.UtcNow,
-                    //Roles = "Admin",
+                    Email = adminEmail,
+                    EmailConfirmed = true,
+                    Role = "ADMIN"
                 };
 
                 var result = await userManager.CreateAsync(adminUser, adminPassword);
                 if (result.Succeeded)
                 {
-                    await userManager.AddToRoleAsync(adminUser, "Admin");
+                    await userManager.AddToRoleAsync(adminUser, "ADMIN");
+                    await userManager.AddToRoleAsync(adminUser, "EMPLOYEE"); // Add Employee role to admin
                 }
             }
+             else if (!await userManager.IsInRoleAsync(adminUser, "ADMIN") || !await userManager.IsInRoleAsync(adminUser, "EMPLOYEE"))
+              {
+                  adminUser.Role = "ADMIN"; // Update existing user
+                  //await context.SaveChangesAsync();
+                  await userManager.AddToRoleAsync(adminUser, "ADMIN");
+                  await userManager.AddToRoleAsync(adminUser, "EMPLOYEE");
+              }
         }
     }
 }
+    
+
 
 
 

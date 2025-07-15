@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SinetLeaveManagement.Models;
-using System.Threading.Tasks;
 
 namespace SinetLeaveManagement.Controllers
 {
@@ -12,13 +11,13 @@ namespace SinetLeaveManagement.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager)
+        public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
         {
-            _userManager = userManager;
             _signInManager = signInManager;
-            _roleManager = roleManager;
+            _userManager = userManager;
         }
 
+        [HttpGet]
         public IActionResult Login()
         {
             return View();
@@ -27,37 +26,76 @@ namespace SinetLeaveManagement.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
-            var result = await _signInManager.PasswordSignInAsync(email, password, false, false);
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+            {
+                ModelState.AddModelError("", "Email and password are required.");
+                return View();
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(email, password, isPersistent: false, lockoutOnFailure: false);
             if (result.Succeeded)
             {
                 return RedirectToAction("Index", "LeaveRequests");
             }
-            ModelState.AddModelError("", "Invalid login attempt");
-            return View();
+            else
+            {
+                ModelState.AddModelError("", "Invalid login attempt.");
+                return View();
+            }
         }
 
-        [Authorize(Roles = "Admin")]
+        [HttpGet]
         public IActionResult Register()
         {
             return View();
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Register(string email, string password, string firstName, string lastName, string role)
+        public async Task<IActionResult> Register(string email, string password)
         {
-            var user = new ApplicationUser { UserName = email, Email = email, FirstName = firstName, LastName = lastName, Role = role };
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+            {
+                ModelState.AddModelError("", "Email and password are required.");
+                return View();
+            }
+
+            var user = new ApplicationUser
+            {
+                FirstName = "new", // You can set default values or leave them empty
+                LastName = "user", // You can set default values or leave them empty
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+                Role = "EMPLOYEE"
+                // You can add more properties here if needed, like FirstName, LastName, etc.
+            };
             var result = await _userManager.CreateAsync(user, password);
             if (result.Succeeded)
             {
-                await _userManager.AddToRoleAsync(user, role);
-                return RedirectToAction("Index", "LeaveRequests");
+                await _userManager.AddToRoleAsync(user, "EMPLOYEE");
+                return RedirectToAction("Login");
             }
-            foreach (var error in result.Errors)
+            else
             {
-                ModelState.AddModelError("", error.Description);
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+                return View();
             }
-            return View();
+        }
+
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View("AccessDenied"); // Render a custom AccessDenied view
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("Login");
         }
     }
 }

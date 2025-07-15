@@ -23,11 +23,13 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="LeaveRequests" asp-action="Notifications">Notifications</a>
                         </li>
-                        @if (User.IsInRole("Admin"))
+                        
+                        @if (User.IsInRole("ADMIN"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Account" asp-action="Register">Register User</a>
                             </li>
+
                         }
                     </ul>
                     <ul class="navbar-nav">
@@ -35,6 +37,10 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Account" asp-action="Logout">Logout (@User.Identity.Name)</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="LeaveRequests" asp-action="Create">Apply</a>
                             </li>
                         }
                         else
@@ -61,12 +67,13 @@
         <p>&copy; 2025 Sinet Leave Management. All rights reserved.</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/microsoft/signalr@7.0.0/dist/browser/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
     <script>
         if (typeof signalR === 'undefined') {
             console.error('SignalR library failed to load from CDN. Check network or use local file.');
         }
     </script>
+    @RenderSection("Scripts", required: false)
     <script src="~/js/site.js" asp-append-version="true"></script>
 </body>
 </html>

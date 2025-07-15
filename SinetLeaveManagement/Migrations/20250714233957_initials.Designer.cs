@@ -12,8 +12,8 @@ using SinetLeaveManagement.Data;
 namespace SinetLeaveManagement.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250714111907_AddEmailConfig")]
-    partial class AddEmailConfig
+    [Migration("20250714233957_initials")]
+    partial class initials
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -2,10 +2,11 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using NETCore.MailKit.Core;
+
 using SinetLeaveManagement.Data;
 using SinetLeaveManagement.Hubs;
 using SinetLeaveManagement.Models;
+using SinetLeaveManagement.Services;
 
 namespace SinetLeaveManagement.Controllers
 {
@@ -16,6 +17,7 @@ namespace SinetLeaveManagement.Controllers
         private readonly IHubContext<NotificationHub> _notificationHub;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailService _emailService;
+
 
         public LeaveRequestsController(ApplicationDbContext context, IHubContext<NotificationHub> notificationHub, UserManager<ApplicationUser> userManager, IEmailService emailService)
         {
@@ -33,41 +35,60 @@ namespace SinetLeaveManagement.Controllers
             return View(requests);
         }
 
-        [Authorize(Roles = "Employee")]
+        [Authorize(Roles = "EMPLOYEE, MANAGER, ADMIN")]
         public IActionResult Create()
         {
             return View();
         }
 
         [HttpPost]
-        [Authorize(Roles = "Employee")]
+        [Authorize(Roles = "EMPLOYEE")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(LeaveRequest model)
         {
             if (ModelState.IsValid)
             {
-                model.EmployeeId = User.Identity.Name;
-                model.Status = "Pending";
-                model.CreatedAt = DateTime.Now;
-                _context.LeaveRequests.Add(model);
-                await _context.SaveChangesAsync();
-
-                var notification = new Notification
+                try
                 {
-                    UserId = "manager_id", // Replace with actual logic to get manager
-                    Message = $"New leave request from {User.Identity.Name}",
-                    CreatedAt = DateTime.Now,
-                    IsRead = false
-                };
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+                    model.EmployeeId = User.Identity.Name;
+                    model.Status = "Pending";
+                    model.CreatedAt = DateTime.Now;
+                    _context.LeaveRequests.Add(model);
+                    await _context.SaveChangesAsync();
 
-                await _notificationHub.Clients.User("manager_id").SendAsync("ReceiveNotification", notification.Message);
-                return RedirectToAction("Index");
+                    var notification = new Notification
+                    {
+                        UserId = "manager_id", // Replace with actual logic to get manager
+                        Message = $"New leave request from {User.Identity.Name}",
+                        CreatedAt = DateTime.Now,
+                        IsRead = false
+                    };
+                    _context.Notifications.Add(notification);
+                    await _context.SaveChangesAsync();
+
+                    await _notificationHub.Clients.User("manager_id").SendAsync("ReceiveNotification", notification.Message);
+                    return RedirectToAction("Index");
+                }
+                catch (Exception ex)
+                {
+                    // Log the exception for debugging
+                    Console.WriteLine($"Error saving leave request: {ex.Message}");
+                    ModelState.AddModelError("", "An error occurred while saving your request. Please try again.");
+                    return View(model);
+                }
             }
-            return View(model);
+            else
+            {
+                // Log validation errors for debugging
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    Console.WriteLine($"Validation error: {error.ErrorMessage}");
+                }
+                return View(model);
+            }
         }
 
-        [Authorize(Roles = "Manager, Supervisor")]
+        [Authorize(Roles = "MANAGER, SUPERVISOR")]
         public async Task<IActionResult> Approve(int id)
         {
             var request = await _context.LeaveRequests.FindAsync(id);
@@ -87,21 +108,19 @@ namespace SinetLeaveManagement.Controllers
                 _context.Notifications.Add(notification);
                 await _context.SaveChangesAsync();
 
-                //notify the employee via SignalR
                 await _notificationHub.Clients.User(request.EmployeeId).SendAsync("ReceiveNotification", notification.Message);
 
-                // Send email to Admin
-                var adminEmail = "admin@example.com"; // Replace with actual admin email
+                var adminEmail = "oladeleoluwadamilare@gmail.com"; // Replace with actual admin email
                 var subject = "Leave Request Approved";
                 var body = $"Leave request from {request.Employee.FirstName} {request.Employee.LastName} (ID: {request.Id}) has been approved on {DateTime.Now:yyyy-MM-dd HH:mm:ss}.";
-                await _emailService.SendAsync(adminEmail, subject, body);
+                await _emailService.SendEmailAsync(adminEmail, subject, body);
 
                 return RedirectToAction("Index");
             }
             return NotFound();
         }
 
-        [Authorize(Roles = "Manager, Supervisor")]
+        [Authorize(Roles = "MANAGER, SUPERVISOR")]
         public async Task<IActionResult> Reject(int id)
         {
             var request = await _context.LeaveRequests.FindAsync(id);
@@ -113,7 +132,7 @@ namespace SinetLeaveManagement.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Manager, Supervisor")]
+        [Authorize(Roles = "MANAGER, SUPERVISOR")]
         public async Task<IActionResult> Reject(LeaveRequest model)
         {
             var request = await _context.LeaveRequests.FindAsync(model.Id);
@@ -134,14 +153,12 @@ namespace SinetLeaveManagement.Controllers
                 _context.Notifications.Add(notification);
                 await _context.SaveChangesAsync();
 
-                //notify the employee via SignalR
                 await _notificationHub.Clients.User(request.EmployeeId).SendAsync("ReceiveNotification", notification.Message);
 
-                // Send email to Admin
-                var adminEmail = "admin@example.com"; // Replace with actual admin email
+                var adminEmail = "oladeleoluwadamilare@gmail.com"; // Replace with actual admin email
                 var subject = "Leave Request Rejected";
                 var body = $"Leave request from {request.Employee.FirstName} {request.Employee.LastName} (ID: {request.Id}) has been rejected on {DateTime.Now:yyyy-MM-dd HH:mm:ss}. Reason: {model.Comments}";
-                await _emailService.SendAsync(adminEmail, subject, body);
+                await _emailService.SendEmailAsync(adminEmail, subject, body);
 
                 return RedirectToAction("Index");
             }
@@ -171,3 +188,7 @@ namespace SinetLeaveManagement.Controllers
         }
     }
 }
+
+
+
+

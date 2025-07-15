@@ -1,0 +1,36 @@
+﻿@model IEnumerable<SinetLeaveManagement.Models.Notification>
+<div class="container mt-4">
+    <h2 class="mb-4">Notifications</h2>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Message</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var notification in Model)
+                {
+                    <tr>
+                        <td>@notification.Message</td>
+                        <td>@notification.CreatedAt.ToString("g")</td>
+                        <td>
+                            <span class="badge @(notification.IsRead ? "bg-secondary" : "bg-info")">
+                                @(notification.IsRead ? "Read" : "Unread")
+                            </span>
+                        </td>
+                        <td>
+                            @if (!notification.IsRead)
+                            {
+                                <a asp-action="MarkAsRead" asp-route-id="@notification.Id" class="btn btn-sm btn-primary">Mark as Read</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
