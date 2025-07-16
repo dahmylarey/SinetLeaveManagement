@@ -3,6 +3,12 @@ body {
     background-color: #f8f9fa;
 }
 
+i{
+    font-size: .3rem;
+   
+}
+
+
 .navbar {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }

@@ -106,6 +106,43 @@ namespace SinetLeaveManagement.Controllers
             //}
         }
 
+
+
+        // GET: LeaveRequests/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+            if (leaveRequest == null)
+            {
+                return NotFound();
+            }
+            return View(leaveRequest);
+        }
+
+
+        // POST: LeaveRequests/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+            if (leaveRequest != null)
+            {
+                _context.LeaveRequests.Remove(leaveRequest);
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+
+
+
         [Authorize(Roles = "MANAGER, ADMIN, SUPERVISOR")]
         public async Task<IActionResult> Approve(int id)
         {

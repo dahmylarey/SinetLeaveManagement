@@ -16,6 +16,7 @@
                     <th>Status</th>
                     <th>Comments</th>
                     <th>Actions</th>
+                    @* <th>Actions Buttons</th> *@
                 </tr>
             </thead>
             <tbody>
@@ -40,6 +41,9 @@
                             {
                                 <a asp-action="Approve" asp-route-id="@request.Id" class="btn btn-success btn-sm">Approve</a>
                                 <a asp-action="Reject" asp-route-id="@request.Id" class="btn btn-danger btn-sm">Reject</a>
+                                <a asp-action="Edit" asp-route-id="@request.Id" class="btn btn-outline-info btn-sm">Edit</a>
+
+                                <a asp-action="Delete" asp-route-id="@request.Id" class="btn btn-outline-danger btn-sm">Delete</a>
                             }
                         </td>
                     </tr>
