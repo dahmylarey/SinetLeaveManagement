@@ -63,12 +63,12 @@ namespace SinetLeaveManagement.Controllers
             var user = new ApplicationUser
             {
                 FirstName = "", // You can set default values or leave them empty
-                LastName = "", // You can set default values or leave them empty
+                LastName = " ", // You can set default values or leave them empty
                 UserName = email,
                 Email = email,
                 //PasswordHash = password,
                 EmailConfirmed = true,
-                Role = "EMPLOYEE"
+                //Role = "EMPLOYEE"
                 // You can add more properties here if needed, like FirstName, LastName, etc.
             };
 

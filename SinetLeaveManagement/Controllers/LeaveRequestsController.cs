@@ -31,10 +31,12 @@ namespace SinetLeaveManagement.Controllers
         [Authorize]
         public IActionResult Index()
         {
-           var requests = _context.LeaveRequests
-            .Include(r => r.Employee) // Eager load the Employee navigation property
-            .Where(r => User.IsInRole("ADMIN") || User.IsInRole("MANAGER") || r.EmployeeId == User.Identity.Name)
-            .ToList();
+            var currentUser = _userManager.GetUserAsync(User).Result;
+            var userId = currentUser?.Id;
+            var requests = _context.LeaveRequests
+                .Include(r => r.Employee) // Eager load the Employee navigation property
+                .Where(r => User.IsInRole("ADMIN") || User.IsInRole("MANAGER") || r.EmployeeId == userId)
+                .ToList();
             return View(requests);
         }
 
@@ -49,7 +51,7 @@ namespace SinetLeaveManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(LeaveRequest model)
         {
-            Console.WriteLine($"Create attempt - Model: {Newtonsoft.Json.JsonConvert.SerializeObject(model)}, User.Identity.Name: {User.Identity.Name}");
+            
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
             {
@@ -69,44 +71,26 @@ namespace SinetLeaveManagement.Controllers
             _context.LeaveRequests.Add(model);
             await _context.SaveChangesAsync();
 
+            var managerId = await GetManagerId();
+            if (string.IsNullOrEmpty(managerId) || !_context.Users.Any(u => u.Id == managerId))
+            {
+                ModelState.AddModelError("", "No valid manager found for notification.");
+                return View(model);
+            }
+
             var notification = new Notification
             {
-                UserId = await GetManagerId(),
+                UserId = managerId,
                 Message = $"New leave request from {currentUser.Email}",
                 CreatedAt = DateTime.Now,
                 IsRead = false
             };
-
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
 
             await _notificationHub.Clients.User(notification.UserId).SendAsync("ReceiveNotification", notification.Message);
             return RedirectToAction("Index");
-
-            //if (ModelState.IsValid)
-            //{
-            //    try
-            //    {
-                    
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Console.WriteLine($"Error saving leave request: {ex.Message} - StackTrace: {ex.StackTrace}");
-            //        ModelState.AddModelError("", "An error occurred while saving your request. Please try again or contact support.");
-            //        return View(model);
-            //    }
-            //}
-            //else
-            //{
-            //    foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-            //    {
-            //        Console.WriteLine($"Validation error: {error.ErrorMessage}");
-            //    }
-            //    return View(model);
-            //}
         }
-
-
 
         // GET: LeaveRequests/Edit/5
         public async Task<IActionResult> Edit(int? id)
@@ -124,9 +108,22 @@ namespace SinetLeaveManagement.Controllers
             return View(leaveRequest);
         }
 
+        // DELETE
+        public async Task<IActionResult> Delete(int id)
+        {
+            var leaveRequest = await _context.LeaveRequests.FindAsync(id);
+            if (leaveRequest != null)
+            {
+                _context.LeaveRequests.Remove(leaveRequest);
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
 
         // POST: LeaveRequests/Delete/5
         [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "EMPLOYEE, ADMIN, MANAGER, SUPERVISOR")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
@@ -140,9 +137,6 @@ namespace SinetLeaveManagement.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-
-
-
         [Authorize(Roles = "MANAGER, ADMIN, SUPERVISOR")]
         public async Task<IActionResult> Approve(int id)
         {
@@ -154,11 +148,11 @@ namespace SinetLeaveManagement.Controllers
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser == null)
                 {
-                    return new StatusCodeResult(StatusCodes.Status500InternalServerError); // Handle null user
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
                 }
 
                 request.Status = "Approved";
-                request.ApproverId = currentUser.Id; // Ensure ApproverId is set
+                request.ApproverId = currentUser.Id;
                 await _context.SaveChangesAsync();
 
                 var notification = new Notification
@@ -168,10 +162,15 @@ namespace SinetLeaveManagement.Controllers
                     CreatedAt = DateTime.Now,
                     IsRead = false
                 };
+                if (string.IsNullOrEmpty(notification.UserId) || !_context.Users.Any(u => u.Id == notification.UserId))
+                {
+                    Console.WriteLine($"Invalid UserId for notification: {notification.UserId}");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
                 _context.Notifications.Add(notification);
                 await _context.SaveChangesAsync();
 
-                await _notificationHub.Clients.User(request.EmployeeId).SendAsync("ReceiveNotification", notification.Message);
+                await _notificationHub.Clients.User(notification.UserId).SendAsync("ReceiveNotification", notification.Message);
 
                 var adminEmail = "admin@example.com";
                 var subject = "Leave Request Approved";
@@ -208,11 +207,11 @@ namespace SinetLeaveManagement.Controllers
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser == null)
                 {
-                    return new StatusCodeResult(StatusCodes.Status500InternalServerError); // Handle null user
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
                 }
 
                 request.Status = "Rejected";
-                request.ApproverId = currentUser.Id; // Ensure ApproverId is set
+                request.ApproverId = currentUser.Id;
                 request.Comments = model.Comments;
                 await _context.SaveChangesAsync();
 
@@ -223,10 +222,15 @@ namespace SinetLeaveManagement.Controllers
                     CreatedAt = DateTime.Now,
                     IsRead = false
                 };
+                if (string.IsNullOrEmpty(notification.UserId) || !_context.Users.Any(u => u.Id == notification.UserId))
+                {
+                    Console.WriteLine($"Invalid UserId for notification: {notification.UserId}");
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
                 _context.Notifications.Add(notification);
                 await _context.SaveChangesAsync();
 
-                await _notificationHub.Clients.User(request.EmployeeId).SendAsync("ReceiveNotification", notification.Message);
+                await _notificationHub.Clients.User(notification.UserId).SendAsync("ReceiveNotification", notification.Message);
 
                 var adminEmail = "admin@example.com";
                 var subject = "Leave Request Rejected";
@@ -241,8 +245,10 @@ namespace SinetLeaveManagement.Controllers
         [Authorize]
         public IActionResult Notifications()
         {
+            var currentUser = _userManager.GetUserAsync(User).Result;
+            var userId = currentUser?.Id;
             var notifications = _context.Notifications
-                
+                .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt)
                 .ToList();
             return View(notifications);
@@ -263,7 +269,16 @@ namespace SinetLeaveManagement.Controllers
         private async Task<string> GetManagerId()
         {
             var managers = await _userManager.GetUsersInRoleAsync("MANAGER");
-            return managers.FirstOrDefault()?.Id ?? "default_manager_id";
+            var manager = managers.FirstOrDefault();
+            if (manager != null) return manager.Id;
+
+            var supervisors = await _userManager.GetUsersInRoleAsync("SUPERVISOR");
+            var supervisor = supervisors.FirstOrDefault();
+            if (supervisor != null) return supervisor.Id;
+
+            var admins = await _userManager.GetUsersInRoleAsync("ADMIN");
+            var admin = admins.FirstOrDefault();
+            return admin?.Id ?? throw new InvalidOperationException("No manager, supervisor, or admin found in the system.");
         }
     }
 }

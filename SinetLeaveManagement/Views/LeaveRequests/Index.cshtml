@@ -37,7 +37,7 @@
                     </td>
                     <td>@request.Comments</td>
                     <td>
-                        @if ((User.IsInRole("Manager") || User.IsInRole("SUPERVISOR") || User.IsInRole("ADMIN")) && request.Status == "Pending")
+                        @if ((User.IsInRole("MANAGER") || User.IsInRole("SUPERVISOR") || User.IsInRole("ADMIN")) && request.Status == "Pending")
                             {
                                 <a asp-action="Approve" asp-route-id="@request.Id" class="btn btn-success btn-sm">Approve</a>
                                 <a asp-action="Reject" asp-route-id="@request.Id" class="btn btn-danger btn-sm">Reject</a>

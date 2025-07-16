@@ -8,6 +8,6 @@ namespace SinetLeaveManagement.Models
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime JoinDate { get; set; }
-        public string Role { get; set; } // Admin, Manager, Supervisor
+        //public string Role { get; set; } // Admin, Manager, Supervisor
     }
 }

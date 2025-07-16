@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using SinetLeaveManagement.Models;
-using static System.Formats.Asn1.AsnWriter;
 
 
 namespace SINETLeaveManagement.Services
@@ -12,7 +10,7 @@ namespace SINETLeaveManagement.Services
 
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
-            
+
 
 
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -39,8 +37,7 @@ namespace SINETLeaveManagement.Services
                     LastName = "Admin",
                     JoinDate = DateTime.UtcNow,
                     Email = adminEmail,
-                    EmailConfirmed = true,
-                    Role = "ADMIN"
+                    EmailConfirmed = true
                 };
 
                 var result = await userManager.CreateAsync(adminUser, adminPassword);
@@ -50,16 +47,43 @@ namespace SINETLeaveManagement.Services
                     await userManager.AddToRoleAsync(adminUser, "EMPLOYEE"); // Add Employee role to admin
                 }
             }
-             else if (!await userManager.IsInRoleAsync(adminUser, "ADMIN") || !await userManager.IsInRoleAsync(adminUser, "EMPLOYEE"))
-              {
-                  adminUser.Role = "ADMIN"; // Update existing user
-                  //await context.SaveChangesAsync();
-                  await userManager.AddToRoleAsync(adminUser, "ADMIN");
-                  await userManager.AddToRoleAsync(adminUser, "EMPLOYEE");
-              }
+            else if (!await userManager.IsInRoleAsync(adminUser, "ADMIN") || !await userManager.IsInRoleAsync(adminUser, "EMPLOYEE"))
+            {
+                await userManager.AddToRoleAsync(adminUser, "ADMIN");
+                await userManager.AddToRoleAsync(adminUser, "EMPLOYEE");
+            }
+
+            // 3. Create default manager user
+            string managerEmail = "manager@example.com";
+            string managerPassword = "Password123!";
+
+            var managerUser = await userManager.FindByEmailAsync(managerEmail);
+            if (managerUser == null)
+            {
+                managerUser = new ApplicationUser
+                {
+                    UserName = managerEmail,
+                    FirstName = "Default",
+                    LastName = "Manager",
+                    JoinDate = DateTime.UtcNow,
+                    Email = managerEmail,
+                    EmailConfirmed = true
+                };
+
+                var result = await userManager.CreateAsync(managerUser, managerPassword);
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(managerUser, "MANAGER");
+                }
+            }
+            else if (!await userManager.IsInRoleAsync(managerUser, "MANAGER"))
+            {
+                await userManager.AddToRoleAsync(managerUser, "MANAGER");
+            }
         }
     }
 }
+
     
 
 
