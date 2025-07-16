@@ -12,8 +12,8 @@ using SinetLeaveManagement.Data;
 namespace SinetLeaveManagement.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250715123547_initils")]
-    partial class initils
+    [Migration("20250716104142_UpdateNoficationRelationship")]
+    partial class UpdateNoficationRelationship
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -257,7 +257,6 @@ namespace SinetLeaveManagement.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("EmployeeId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("EndDate")
@@ -367,13 +366,13 @@ namespace SinetLeaveManagement.Migrations
                 {
                     b.HasOne("SinetLeaveManagement.Models.ApplicationUser", "Approver")
                         .WithMany()
-                        .HasForeignKey("ApproverId");
+                        .HasForeignKey("ApproverId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SinetLeaveManagement.Models.ApplicationUser", "Employee")
                         .WithMany()
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Approver");
 
@@ -385,7 +384,7 @@ namespace SinetLeaveManagement.Migrations
                     b.HasOne("SinetLeaveManagement.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");

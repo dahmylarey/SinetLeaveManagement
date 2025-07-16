@@ -21,16 +21,33 @@ namespace SinetLeaveManagement.Data
             modelBuilder.Entity<LeaveRequest>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.EmployeeId);
                 entity.HasOne(e => e.Employee)
-                    .WithMany() // No inverse navigation property on ApplicationUser
+                    .WithMany()
                     .HasForeignKey(e => e.EmployeeId)
-                    .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete if needed
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(e => e.ApproverId);
+                entity.HasOne(e => e.Approver)
+                    .WithMany()
+                    .HasForeignKey(e => e.ApproverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
             });
 
             modelBuilder.Entity<Notification>(entity =>
             {
-                entity.HasKey(e => e.Id); // Ensure Notification has a primary key
+                // Ensure Notification has a primary key
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserId);
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
+
+
+
         }
     }
 }

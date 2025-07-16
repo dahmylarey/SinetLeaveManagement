@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using SinetLeaveManagement.Models;
 
 namespace SinetLeaveManagement.Controllers
@@ -61,14 +62,16 @@ namespace SinetLeaveManagement.Controllers
 
             var user = new ApplicationUser
             {
-                FirstName = "new", // You can set default values or leave them empty
-                LastName = "user", // You can set default values or leave them empty
+                FirstName = "", // You can set default values or leave them empty
+                LastName = "", // You can set default values or leave them empty
                 UserName = email,
                 Email = email,
+                //PasswordHash = password,
                 EmailConfirmed = true,
                 Role = "EMPLOYEE"
                 // You can add more properties here if needed, like FirstName, LastName, etc.
             };
+
             var result = await _userManager.CreateAsync(user, password);
             if (result.Succeeded)
             {

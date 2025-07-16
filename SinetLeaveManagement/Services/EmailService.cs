@@ -1,52 +1,54 @@
 ﻿using MailKit.Security;
+using Microsoft.Extensions.Options;
 using MimeKit;
+using System.Net;
+using System.Net.Mail;
+
 
 namespace SinetLeaveManagement.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly string _smtpServer; private readonly int _smtpPort; private readonly string _smtpUsername; private readonly string _smtpPassword; private readonly string _fromEmail; private readonly ILogger _logger;
+        private readonly EmailSettings _emailSettings;
 
-        public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+        public EmailService(IOptions<EmailSettings> emailSettings)
         {
-            _smtpServer = configuration["Smtp:Server"] ?? throw new ArgumentNullException("Smtp:Server is not configured.");
-            _smtpPort = int.TryParse(configuration["Smtp:Port"], out int port) ? port : throw new ArgumentNullException("Smtp:Port is not configured or invalid.");
-            _smtpUsername = configuration["Smtp:Username"] ?? throw new ArgumentNullException("Smtp:Username is not configured.");
-            _smtpPassword = configuration["Smtp:Password"] ?? throw new ArgumentNullException("Smtp:Password is not configured.");
-            _fromEmail = configuration["Smtp:FromEmail"] ?? throw new ArgumentNullException("Smtp:FromEmail is not configured.");
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _emailSettings = emailSettings.Value;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            if (string.IsNullOrWhiteSpace(toEmail))
-                throw new ArgumentException("To email address is required.", nameof(toEmail));
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Sinet Leave Management", _fromEmail));
-            message.To.Add(new MailboxAddress("", toEmail));
-            message.Subject = subject;
-            message.Body = new TextPart("plain") { Text = body };
-
-            try
+            var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
             {
-                using var client = new MailKit.Net.Smtp.SmtpClient(); // Explicitly qualified
-                _logger.LogInformation("Connecting to SMTP server: {SmtpServer} on port {SmtpPort}", _smtpServer, _smtpPort);
-                await client.ConnectAsync(_smtpServer, _smtpPort, SecureSocketOptions.StartTls);
-                _logger.LogInformation("Authenticating with SMTP server...");
-                await client.AuthenticateAsync(_smtpUsername, _smtpPassword);
-                _logger.LogInformation("Sending email to {ToEmail}...", toEmail);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-                _logger.LogInformation("Email sent successfully to {ToEmail}", toEmail);
-            }
-            catch (Exception ex)
+                Port = _emailSettings.SmtpPort,
+                Credentials = new NetworkCredential(_emailSettings.SmtpUser, _emailSettings.SmtpPass),
+                EnableSsl = _emailSettings.EnableSsl
+            };
+
+            var mailMessage = new MailMessage
             {
-                _logger.LogError(ex, "Failed to send email to {ToEmail}. Error: {ErrorMessage}", toEmail, ex.Message);
-                throw;
-            }
+                From = new MailAddress(_emailSettings.SmtpUser),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true
+            };
+            mailMessage.To.Add(toEmail);
+
+            await smtpClient.SendMailAsync(mailMessage);
         }
     }
+
+  
+
+    public class EmailSettings
+    {
+        public string SmtpServer { get; set; }
+        public int SmtpPort { get; set; }
+        public string SmtpUser { get; set; }
+        public string SmtpPass { get; set; }
+        public bool EnableSsl { get; set; }
+    }
+
 }
 
 
